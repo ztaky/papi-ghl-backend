@@ -20,6 +20,22 @@
       "dest": "/api/payment.js"
     },
     {
+      "src": "/query",
+      "dest": "/api/query.js"
+    },
+    {
+      "src": "/auth/callback",
+      "dest": "/api/auth-callback.js"
+    },
+    {
+      "src": "/webhooks/ghl",
+      "dest": "/api/webhooks-ghl.js"
+    },
+    {
+      "src": "/webhooks/papi",
+      "dest": "/api/webhooks-papi.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1.js"
     }
