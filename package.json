@@ -1,0 +1,9 @@
+{
+  "name": "papi-ghl-integration",
+  "version": "3.0.0",
+  "description": "Backend Papi-GHL Simple",
+  "main": "index.js",
+  "engines": {
+    "node": "18.x"
+  }
+}
