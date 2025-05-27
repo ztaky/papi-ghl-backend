@@ -1,0 +1,9 @@
+{
+  "name": "papi-ghl-integration",
+  "version": "4.0.0",
+  "type": "module",
+  "main": "api/index.js",
+  "engines": {
+    "node": "18.x"
+  }
+}
