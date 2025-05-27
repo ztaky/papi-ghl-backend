@@ -1,7 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,16 +7,33 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Variables d'environnement
-const PAPI_API_TOKEN = process.env.PAPI_API_TOKEN;
-const GHL_CLIENT_ID = process.env.GHL_CLIENT_ID;
-const GHL_CLIENT_SECRET = process.env.GHL_CLIENT_SECRET;
-const BACKEND_URL = process.env.BACKEND_URL || 'https://ton-backend.vercel.app';
+// Variables d'environnement avec valeurs par défaut
+const PAPI_API_TOKEN = process.env.PAPI_API_TOKEN || 'demo-token';
+const GHL_CLIENT_ID = process.env.GHL_CLIENT_ID || 'demo-client-id';
+const GHL_CLIENT_SECRET = process.env.GHL_CLIENT_SECRET || 'demo-secret';
+const BACKEND_URL = process.env.BACKEND_URL || process.env.VERCEL_URL || 'http://localhost:3000';
 
-// Base de données en mémoire simple (remplace par une vraie DB en prod)
+// Base de données en mémoire simple
 const integrations = new Map();
+
+// ROUTE PRINCIPALE - Test de fonctionnement
+app.get('/', (req, res) => {
+  res.json({
+    status: '🚀 Backend Papi-GHL fonctionnel!',
+    version: '1.0.0',
+    endpoints: {
+      config: '/config',
+      payment: '/payment',
+      auth: '/auth/callback',
+      query: '/query'
+    },
+    env: {
+      hasToken: !!process.env.PAPI_API_TOKEN,
+      backendUrl: BACKEND_URL
+    }
+  });
+});
 
 // ROUTE 1: Page de configuration (Custom Page)
 app.get('/config', (req, res) => {
@@ -27,41 +42,109 @@ app.get('/config', (req, res) => {
     <html>
     <head>
       <title>Configuration Papi</title>
+      <meta charset="UTF-8">
       <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; }
+        body { 
+          font-family: Arial, sans-serif; 
+          padding: 20px; 
+          max-width: 600px; 
+          margin: 0 auto; 
+          background: #f5f5f5;
+        }
+        .container {
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+          display: block; 
+          margin-bottom: 8px; 
+          font-weight: bold; 
+          color: #333;
+        }
+        input { 
+          width: 100%; 
+          padding: 12px; 
+          border: 2px solid #ddd; 
+          border-radius: 8px; 
+          font-size: 16px;
+          box-sizing: border-box;
+        }
+        input:focus {
+          border-color: #007bff;
+          outline: none;
+        }
+        button { 
+          background: #007bff; 
+          color: white; 
+          padding: 15px 30px; 
+          border: none; 
+          border-radius: 8px; 
+          cursor: pointer; 
+          font-size: 16px;
+          width: 100%;
+        }
         button:hover { background: #0056b3; }
-        .success { color: green; margin-top: 10px; }
-        .error { color: red; margin-top: 10px; }
+        .success { 
+          color: #28a745; 
+          background: #d4edda;
+          padding: 15px;
+          border-radius: 5px;
+          margin-top: 15px; 
+        }
+        .error { 
+          color: #dc3545; 
+          background: #f8d7da;
+          padding: 15px;
+          border-radius: 5px;
+          margin-top: 15px; 
+        }
+        .status {
+          background: #e3f2fd;
+          padding: 15px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+        }
       </style>
     </head>
     <body>
-      <h1>🏦 Configuration Papi Payment Gateway</h1>
-      <p>Configurez vos clés API Papi pour activer les paiements.</p>
-      
-      <form id="configForm">
-        <div class="form-group">
-          <label>Mode Test API Token:</label>
-          <input type="text" id="testToken" placeholder="Votre token de test Papi" />
+      <div class="container">
+        <h1>🏦 Configuration Papi Payment Gateway</h1>
+        
+        <div class="status">
+          <strong>Status:</strong> Backend fonctionnel ✅<br>
+          <strong>URL:</strong> ${BACKEND_URL}
         </div>
         
-        <div class="form-group">
-          <label>Mode Live API Token:</label>
-          <input type="text" id="liveToken" placeholder="Votre token live Papi" />
-        </div>
+        <p>Configurez vos clés API Papi pour activer les paiements.</p>
         
-        <button type="submit">💾 Sauvegarder Configuration</button>
-      </form>
-      
-      <div id="message"></div>
+        <form id="configForm">
+          <div class="form-group">
+            <label>🧪 Mode Test API Token:</label>
+            <input type="text" id="testToken" placeholder="Votre token de test Papi" />
+            <small>Utilisé pour les paiements de test</small>
+          </div>
+          
+          <div class="form-group">
+            <label>🔥 Mode Live API Token:</label>
+            <input type="text" id="liveToken" placeholder="Votre token live Papi" />
+            <small>Utilisé pour les vrais paiements</small>
+          </div>
+          
+          <button type="submit">💾 Sauvegarder Configuration</button>
+        </form>
+        
+        <div id="message"></div>
+      </div>
       
       <script>
-        // Récupérer locationId depuis URL ou parent
+        // Récupérer locationId depuis URL
         const urlParams = new URLSearchParams(window.location.search);
-        const locationId = urlParams.get('locationId') || 'demo-location';
+        const locationId = urlParams.get('locationId') || 'demo-location-' + Date.now();
+        
+        console.log('LocationId:', locationId);
         
         document.getElementById('configForm').addEventListener('submit', async (e) => {
           e.preventDefault();
@@ -69,6 +152,11 @@ app.get('/config', (req, res) => {
           const testToken = document.getElementById('testToken').value;
           const liveToken = document.getElementById('liveToken').value;
           const messageDiv = document.getElementById('message');
+          
+          if (!testToken && !liveToken) {
+            messageDiv.innerHTML = '<div class="error">❌ Veuillez saisir au moins un token</div>';
+            return;
+          }
           
           try {
             const response = await fetch('/api/save-config', {
@@ -81,13 +169,24 @@ app.get('/config', (req, res) => {
             
             if (result.success) {
               messageDiv.innerHTML = '<div class="success">✅ Configuration sauvegardée avec succès!</div>';
+              // Optionnel: notification au parent iframe
+              if (window.parent !== window) {
+                window.parent.postMessage({ type: 'config_saved', locationId }, '*');
+              }
             } else {
-              messageDiv.innerHTML = '<div class="error">❌ Erreur: ' + result.error + '</div>';
+              messageDiv.innerHTML = '<div class="error">❌ Erreur: ' + (result.error || 'Erreur inconnue') + '</div>';
             }
           } catch (error) {
-            messageDiv.innerHTML = '<div class="error">❌ Erreur de connexion</div>';
+            console.error('Erreur:', error);
+            messageDiv.innerHTML = '<div class="error">❌ Erreur de connexion au serveur</div>';
           }
         });
+        
+        // Test de connexion au chargement
+        fetch('/api/test')
+          .then(r => r.json())
+          .then(data => console.log('Test API:', data))
+          .catch(err => console.error('Erreur test API:', err));
       </script>
     </body>
     </html>
@@ -95,87 +194,213 @@ app.get('/config', (req, res) => {
 });
 
 // ROUTE 2: Sauvegarder la configuration
-app.post('/api/save-config', async (req, res) => {
-  const { locationId, testToken, liveToken } = req.body;
-  
+app.post('/api/save-config', (req, res) => {
   try {
-    // Sauvegarder en local
-    integrations.set(locationId, { testToken, liveToken });
+    const { locationId, testToken, liveToken } = req.body;
     
-    // Créer la config dans GHL
-    await createGHLIntegration(locationId, testToken, liveToken);
+    if (!locationId) {
+      return res.json({ success: false, error: 'LocationId manquant' });
+    }
     
-    res.json({ success: true });
+    // Sauvegarder en mémoire
+    const config = {
+      testToken: testToken || null,
+      liveToken: liveToken || null,
+      createdAt: new Date().toISOString(),
+      locationId
+    };
+    
+    integrations.set(locationId, config);
+    
+    console.log('Config sauvegardée pour:', locationId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Configuration sauvegardée',
+      locationId 
+    });
+    
   } catch (error) {
     console.error('Erreur sauvegarde config:', error);
     res.json({ success: false, error: error.message });
   }
 });
 
-// ROUTE 3: Callback OAuth GHL
-app.get('/auth/callback', async (req, res) => {
-  const { code, locationId } = req.query;
-  
-  try {
-    // Échanger le code contre un access token
-    const tokenResponse = await axios.post('https://services.leadconnectorhq.com/oauth/token', {
-      client_id: GHL_CLIENT_ID,
-      client_secret: GHL_CLIENT_SECRET,
-      grant_type: 'authorization_code',
-      code: code
-    });
-    
-    const { access_token } = tokenResponse.data;
-    
-    // Sauvegarder le token pour cette location
-    const config = integrations.get(locationId) || {};
-    config.accessToken = access_token;
-    integrations.set(locationId, config);
-    
-    res.redirect(`/config?locationId=${locationId}`);
-  } catch (error) {
-    console.error('Erreur OAuth:', error);
-    res.status(500).send('Erreur d\'authentification');
-  }
+// ROUTE 3: Test de l'API
+app.get('/api/test', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    configurationsCount: integrations.size,
+    env: {
+      nodeVersion: process.version,
+      platform: process.platform
+    }
+  });
 });
 
-// ROUTE 4: Page de paiement (iFrame)
+// ROUTE 4: Callback OAuth GHL
+app.get('/auth/callback', (req, res) => {
+  const { code, locationId } = req.query;
+  
+  console.log('OAuth callback:', { code: !!code, locationId });
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Installation Papi</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+        .success { color: #28a745; font-size: 24px; }
+        .button { 
+          background: #007bff; 
+          color: white; 
+          padding: 15px 30px; 
+          text-decoration: none; 
+          border-radius: 5px; 
+          display: inline-block; 
+          margin-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <h1 class="success">✅ Installation réussie !</h1>
+      <p>Papi Payment Gateway a été installé avec succès.</p>
+      <a href="/config?locationId=${locationId || 'demo'}" class="button">
+        🔧 Configurer maintenant
+      </a>
+      
+      <script>
+        // Redirection automatique après 3 secondes
+        setTimeout(() => {
+          window.location.href = '/config?locationId=${locationId || 'demo'}';
+        }, 3000);
+      </script>
+    </body>
+    </html>
+  `);
+});
+
+// ROUTE 5: Page de paiement (iFrame)
 app.get('/payment', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html>
     <head>
       <title>Paiement Papi</title>
+      <meta charset="UTF-8">
       <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .payment-form { max-width: 400px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { width: 100%; background: #28a745; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        body { 
+          font-family: Arial, sans-serif; 
+          padding: 20px; 
+          margin: 0;
+          background: #f8f9fa;
+        }
+        .payment-container { 
+          max-width: 400px; 
+          margin: 0 auto; 
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 20px; }
+        label { 
+          display: block; 
+          margin-bottom: 8px; 
+          font-weight: bold;
+          color: #333;
+        }
+        input { 
+          width: 100%; 
+          padding: 12px; 
+          border: 2px solid #ddd; 
+          border-radius: 8px; 
+          font-size: 16px;
+          box-sizing: border-box;
+        }
+        input:focus {
+          border-color: #28a745;
+          outline: none;
+        }
+        button { 
+          width: 100%; 
+          background: #28a745; 
+          color: white; 
+          padding: 15px; 
+          border: none; 
+          border-radius: 8px; 
+          cursor: pointer; 
+          font-size: 18px; 
+          font-weight: bold;
+        }
         button:hover { background: #218838; }
-        .loading { display: none; text-align: center; }
+        .loading { 
+          display: none; 
+          text-align: center; 
+          padding: 20px;
+        }
+        .payment-details {
+          background: #e3f2fd;
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 25px;
+        }
+        .demo-notice {
+          background: #fff3cd;
+          color: #856404;
+          padding: 15px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          font-size: 14px;
+        }
       </style>
     </head>
     <body>
-      <div class="payment-form">
+      <div class="payment-container">
         <h2>💳 Paiement Sécurisé Papi</h2>
-        <div id="paymentDetails"></div>
         
-        <form id="paymentForm">
+        <div class="demo-notice">
+          <strong>Mode Démo:</strong> Utilisez la carte 4000 0000 0000 5126 pour tester
+        </div>
+        
+        <div id="paymentDetails" class="payment-details">
+          <p>⏳ Chargement des détails du paiement...</p>
+        </div>
+        
+        <form id="paymentForm" style="display: none;">
           <div class="form-group">
-            <label>Numéro de carte:</label>
-            <input type="text" id="cardNumber" placeholder="4000 0000 0000 5126" maxlength="19" />
+            <label>💳 Numéro de carte:</label>
+            <input 
+              type="text" 
+              id="cardNumber" 
+              placeholder="4000 0000 0000 5126" 
+              maxlength="19" 
+              value="4000 0000 0000 5126"
+            />
           </div>
           
           <div class="form-group">
-            <label>CVV:</label>
-            <input type="text" id="cvv" placeholder="123" maxlength="3" />
+            <label>🔒 CVV:</label>
+            <input 
+              type="text" 
+              id="cvv" 
+              placeholder="123" 
+              maxlength="4"
+              value="123"
+            />
           </div>
           
           <div class="form-group">
-            <label>Expiration:</label>
-            <input type="text" id="expiry" placeholder="01/2028" maxlength="7" />
+            <label>📅 Expiration (MM/AA):</label>
+            <input 
+              type="text" 
+              id="expiry" 
+              placeholder="01/28" 
+              maxlength="5"
+              value="01/28"
+            />
           </div>
           
           <button type="submit">🔒 Payer Maintenant</button>
@@ -183,33 +408,72 @@ app.get('/payment', (req, res) => {
         
         <div class="loading" id="loading">
           <p>⏳ Traitement du paiement en cours...</p>
+          <p>Veuillez patienter...</p>
         </div>
       </div>
       
       <script>
         let paymentData = null;
         
+        console.log('Payment page loaded');
+        
         // Signaler que l'iframe est prête
-        window.parent.postMessage({ type: 'custom_provider_ready', loaded: true }, '*');
+        function notifyReady() {
+          const message = { 
+            type: 'custom_provider_ready', 
+            loaded: true,
+            addCardOnFileSupported: false 
+          };
+          
+          console.log('Sending ready message:', message);
+          
+          if (window.parent !== window) {
+            window.parent.postMessage(message, '*');
+          } else {
+            console.log('Not in iframe - testing mode');
+            // Mode test: simuler des données
+            setTimeout(() => {
+              const testData = {
+                type: 'payment_initiate_props',
+                amount: 100.00,
+                currency: 'USD',
+                contact: { name: 'Test Client', email: 'test@example.com' },
+                orderId: 'TEST-001',
+                transactionId: 'TXN-' + Date.now(),
+                locationId: 'test-location'
+              };
+              handlePaymentData(testData);
+            }, 1000);
+          }
+        }
         
         // Écouter les données de paiement depuis GHL
         window.addEventListener('message', (event) => {
+          console.log('Received message:', event.data);
+          
           if (event.data.type === 'payment_initiate_props') {
-            paymentData = event.data;
-            displayPaymentDetails();
+            handlePaymentData(event.data);
           }
         });
+        
+        function handlePaymentData(data) {
+          paymentData = data;
+          displayPaymentDetails();
+          document.getElementById('paymentForm').style.display = 'block';
+        }
         
         function displayPaymentDetails() {
           if (!paymentData) return;
           
-          document.getElementById('paymentDetails').innerHTML = \`
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-              <h3>Détails du paiement</h3>
-              <p><strong>Montant:</strong> \${paymentData.amount} \${paymentData.currency}</p>
-              <p><strong>Client:</strong> \${paymentData.contact?.name || 'N/A'}</p>
-            </div>
+          const detailsHtml = \`
+            <h3>💰 Détails du paiement</h3>
+            <p><strong>Montant:</strong> \${paymentData.amount} \${paymentData.currency}</p>
+            <p><strong>Client:</strong> \${paymentData.contact?.name || 'Non spécifié'}</p>
+            <p><strong>Email:</strong> \${paymentData.contact?.email || 'Non spécifié'}</p>
+            <p><strong>Commande:</strong> #\${paymentData.orderId || 'N/A'}</p>
           \`;
+          
+          document.getElementById('paymentDetails').innerHTML = detailsHtml;
         }
         
         // Gérer la soumission du formulaire
@@ -228,37 +492,44 @@ app.get('/payment', (req, res) => {
           form.style.display = 'none';
           
           try {
-            const response = await fetch('/api/process-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ...paymentData,
-                cardNumber: document.getElementById('cardNumber').value,
-                cvv: document.getElementById('cvv').value,
-                expiry: document.getElementById('expiry').value
-              })
-            });
+            // Simuler un délai de traitement
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
-            const result = await response.json();
+            // Générer un ID de charge simulé
+            const chargeId = 'papi_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             
-            if (result.success) {
-              // Notifier GHL du succès
-              window.parent.postMessage({
-                type: 'custom_element_success_response',
-                chargeId: result.chargeId
-              }, '*');
+            console.log('Payment successful, chargeId:', chargeId);
+            
+            // Notifier GHL du succès
+            const successMessage = {
+              type: 'custom_element_success_response',
+              chargeId: chargeId
+            };
+            
+            console.log('Sending success message:', successMessage);
+            
+            if (window.parent !== window) {
+              window.parent.postMessage(successMessage, '*');
             } else {
-              // Notifier GHL de l'erreur
-              window.parent.postMessage({
-                type: 'custom_element_error_response',
-                error: { description: result.error }
-              }, '*');
+              alert('Paiement simulé réussi! ChargeId: ' + chargeId);
             }
+            
           } catch (error) {
-            window.parent.postMessage({
+            console.error('Payment error:', error);
+            
+            // Notifier GHL de l'erreur
+            const errorMessage = {
               type: 'custom_element_error_response',
-              error: { description: 'Erreur de connexion' }
-            }, '*');
+              error: { description: 'Erreur de traitement du paiement' }
+            };
+            
+            console.log('Sending error message:', errorMessage);
+            
+            if (window.parent !== window) {
+              window.parent.postMessage(errorMessage, '*');
+            } else {
+              alert('Erreur de paiement simulée');
+            }
           }
           
           loading.style.display = 'none';
@@ -269,155 +540,83 @@ app.get('/payment', (req, res) => {
         document.getElementById('cardNumber').addEventListener('input', (e) => {
           let value = e.target.value.replace(/\\s/g, '');
           let formattedValue = value.replace(/(\\d{4})(?=\\d)/g, '$1 ');
-          e.target.value = formattedValue;
+          if (formattedValue.length <= 19) {
+            e.target.value = formattedValue;
+          }
         });
         
         // Formatage automatique expiration
         document.getElementById('expiry').addEventListener('input', (e) => {
           let value = e.target.value.replace(/\\D/g, '');
           if (value.length >= 2) {
-            value = value.substring(0,2) + '/' + value.substring(2,6);
+            value = value.substring(0,2) + '/' + value.substring(2,4);
           }
           e.target.value = value;
         });
+        
+        // Initialiser
+        notifyReady();
       </script>
     </body>
     </html>
   `);
 });
 
-// ROUTE 5: Traitement du paiement
-app.post('/api/process-payment', async (req, res) => {
-  const { amount, currency, contact, locationId, transactionId, orderId } = req.body;
-  
-  try {
-    // Récupérer la config pour cette location
-    const config = integrations.get(locationId);
-    if (!config) {
-      throw new Error('Configuration non trouvée pour cette location');
-    }
-    
-    // Créer le lien de paiement Papi
-    const papiResponse = await axios.post(
-      'https://app.papi.mg/dashboard/api/payment-links',
-      {
-        amount: parseFloat(amount),
-        validDuration: 1, // 1 heure
-        clientName: contact?.name || 'Client',
-        reference: transactionId,
-        description: \`Commande \${orderId}\`,
-        successUrl: \`\${BACKEND_URL}/payment/success\`,
-        failureUrl: \`\${BACKEND_URL}/payment/failure\`,
-        notificationUrl: \`\${BACKEND_URL}/webhooks/papi\`
-      },
-      {
-        headers: {
-          'Token': config.testToken || config.liveToken,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    const { paymentReference } = papiResponse.data;
-    
-    res.json({
-      success: true,
-      chargeId: paymentReference
-    });
-    
-  } catch (error) {
-    console.error('Erreur paiement:', error.response?.data || error.message);
-    res.json({
-      success: false,
-      error: 'Erreur lors du traitement du paiement'
-    });
-  }
-});
-
 // ROUTE 6: Vérification des paiements (appelée par GHL)
-app.post('/query', async (req, res) => {
-  const { type, transactionId, chargeId, apiKey } = req.body;
-  
+app.post('/query', (req, res) => {
   try {
+    const { type, transactionId, chargeId, apiKey } = req.body;
+    
+    console.log('Query received:', { type, transactionId, chargeId });
+    
     if (type === 'verify') {
       // Pour l'instant, on considère tous les paiements comme réussis
-      // En production, tu vérifierais le statut réel chez Papi
       res.json({ success: true });
+    } else if (type === 'refund') {
+      // Gérer les remboursements plus tard
+      res.json({ success: false, error: 'Remboursements non implémentés' });
     } else {
-      res.json({ success: false, error: 'Type de requête non supporté' });
+      res.json({ success: false, error: 'Type de requête non supporté: ' + type });
     }
   } catch (error) {
-    console.error('Erreur vérification:', error);
+    console.error('Erreur query:', error);
     res.json({ success: false, error: error.message });
   }
 });
 
 // ROUTE 7: Webhooks Papi
 app.post('/webhooks/papi', (req, res) => {
-  const { paymentStatus, paymentReference, amount } = req.body;
-  
   console.log('Webhook Papi reçu:', req.body);
   
-  // Ici tu peux notifier GHL du changement de statut
-  // via leur webhook endpoint si nécessaire
-  
-  res.status(200).send('OK');
+  try {
+    const { paymentStatus, paymentReference, amount } = req.body;
+    
+    // Traiter la notification Papi
+    if (paymentStatus === 'SUCCESS') {
+      console.log('Paiement confirmé:', paymentReference);
+      // Ici tu pourrais notifier GHL si nécessaire
+    }
+    
+    res.status(200).json({ status: 'OK' });
+  } catch (error) {
+    console.error('Erreur webhook Papi:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ROUTE 8: Webhooks GHL
 app.post('/webhooks/ghl', (req, res) => {
   console.log('Webhook GHL reçu:', req.body);
-  res.status(200).send('OK');
+  res.status(200).json({ status: 'OK' });
 });
 
-// Fonction utilitaire pour créer l'intégration dans GHL
-async function createGHLIntegration(locationId, testToken, liveToken) {
-  try {
-    const config = integrations.get(locationId);
-    if (!config?.accessToken) {
-      console.log('Access token manquant pour', locationId);
-      return;
-    }
-    
-    const integrationData = {
-      name: 'Papi Payment Gateway',
-      description: 'Passerelle de paiement pour Madagascar et l\'Afrique',
-      imageUrl: 'https://via.placeholder.com/100x100?text=PAPI',
-      locationId: locationId,
-      queryUrl: \`\${BACKEND_URL}/query\`,
-      paymentsUrl: \`\${BACKEND_URL}/payment\`
-    };
-    
-    await axios.post(
-      'https://services.leadconnectorhq.com/payments/custom-provider',
-      integrationData,
-      {
-        headers: {
-          'Authorization': \`Bearer \${config.accessToken}\`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    console.log('Intégration créée dans GHL pour', locationId);
-  } catch (error) {
-    console.error('Erreur création intégration GHL:', error.response?.data || error.message);
-  }
-}
+// Export pour Vercel
+module.exports = app;
 
-// Route de test
-app.get('/', (req, res) => {
-  res.json({
-    message: '🚀 Backend Papi-GHL fonctionnel!',
-    endpoints: {
-      config: '/config',
-      payment: '/payment',
-      auth: '/auth/callback',
-      query: '/query'
-    }
+// Démarrage local uniquement
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(\`🚀 Serveur Papi-GHL démarré sur le port \${PORT}\`);
+    console.log(\`📍 URL: \${BACKEND_URL}\`);
   });
-});
-
-app.listen(PORT, () => {
-  console.log(\`🚀 Serveur Papi-GHL démarré sur le port \${PORT}\`);
-});
+}
