@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    { "src": "/", "dest": "/api" },
+    { "src": "/config", "dest": "/api?url=/config" },
+    { "src": "/payment", "dest": "/api?url=/payment" },
+    { "src": "/auth/callback", "dest": "/api?url=/auth/callback" },
+    { "src": "/query", "dest": "/api?url=/query" },
+    { "src": "/webhooks/(.*)", "dest": "/api?url=/webhooks/$1" },
+    { "src": "/api/(.*)", "dest": "/api?url=/api/$1" },
+    { "src": "/(.*)", "dest": "/api?url=/$1" }
+  ]
+}
